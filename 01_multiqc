@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=4000M
+#SBATCH --time=01:00:00
+#SBATCH --job-name=fastqc
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch
+#SBATCH --mail-type=begin,end
+#SBATCH --output=/home/zwang/new/output/output_fastqc_%j.o
+#SBATCH --error=/home/zwang/new/output/error_fastqc_%j.e
+#SBATCH --partition=pibu_el8
+
+
+Data_PATH=/data/users/zwang/new_assembly/participant_7
+QC_out=/data/users/zwang/new_assembly/01_fastqc/mult
+
+module load MultiQC/1.11-foss-2021a
+
+
+multiqc /data/users/zwang/new_assembly/01_fastqc -o $QC_out
