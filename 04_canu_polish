@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+#SBATCH --time=2-00:00:00
+#SBATCH --mem=32G
+#SBATCH --cpus-per-task=8
+#SBATCH --job-name=canu_polish
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch
+#SBATCH --mail-type=begin,end
+#SBATCH --output=/data/users/zwang/new_assembly/output/output_canu_polish_%j.o
+#SBATCH --error=/data/users/zwang/new_assembly/output/error_canu_polish_%j.e
+#SBATCH --partition=pgpu
+
+# Load required modules
+module load Bowtie2/2.4.4-GCC-10.3.0
+module load SAMtools/1.13-GCC-10.3.0
+module load Pilon/1.23-Java-11
+module load FastQC/0.11.9-Java-11
+
+# Define paths
+draft_genome=/data/users/zwang/new_assembly/03_canu
+data=/data/users/zwang/new_assembly/participant_7/Illumina
+outfile=/data/users/zwang/new_assembly/04_canu_polish
+
+# Create the output directory if it doesn't exist
+mkdir -p $outfile
+
+# Change to the draft genome directory
+cd $draft_genome
+
+# Build Bowtie2 index
+bowtie2-build -f $draft_genome/Arabidopsis.contigs.fasta Arabidopsis --threads 8
+
+# Align reads with Bowtie2 and sort the output with SAMtools
+bowtie2 \
+    --sensitive-local \
+    -p 8 \
+    -x Arabidopsis \
+    -1 ${data}/*1.fastq.gz \
+    -2 ${data}/*2.fastq.gz | \
+    samtools sort \
+    -T $SCRATCH \
+    -@ $SLURM_CPUS_PER_TASK \
+    -O bam -o last.sorted.bam
+
+# Index the BAM file
+samtools index -b -@ 8 last.sorted.bam
+
+# Run Pilon for polishing
+java -Xmx24G -jar $EBROOTPILON/pilon-1.23.jar \
+    --genome $draft_genome/Arabidopsis.contigs.fasta \
+    --bam last.sorted.bam \
+    --outdir $outfile \
+    --threads 8
