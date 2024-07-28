@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+#SBATCH --cpus-per-task=4
+#SBATCH --mem-per-cpu=5GB
+#SBATCH --time=02:00:00
+#SBATCH --job-name=k-mer
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch
+#SBATCH --mail-type=begin,end
+#SBATCH --output=/home/zwang/new/output/output_kmer_%j.o
+#SBATCH --error=/home/zwang/new/output/error_kmer_%j.e
+#SBATCH --partition=pibu_el8
+
+module load Jellyfish/2.3.0-GCC-10.3.0
+Data_PATH=/data/users/zwang/new_assembly/participant_7
+K_out=/data/users/zwang/new_assembly/02_kmer
+
+cd $Data_PATH
+
+for i in *; do
+    if [ -d "${i}" ]; then
+        mkdir -p $K_out/${i}
+        jellyfish count -m 14 -s 5G -t 4 \
+            <(zcat ${i}/*.fastq.gz) -o $K_out/${i}/mer_counts.jf
+        jellyfish histo $K_out/${i}/mer_counts.jf > $K_out/${i}/mer_${i}.histo
+    fi
+done
