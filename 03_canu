@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+#SBATCH --time=20:00:00
+#SBATCH --mem=64G
+#SBATCH --cpus-per-task=16
+#SBATCH --job-name=canu
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch
+#SBATCH --mail-type=begin,end
+#SBATCH --output=/data/users/zwang/new_assembly/output/canu_output_%j.o
+#SBATCH --error=/data/users/zwang/new_assembly/output/canu_error_%j.e
+#SBATCH --partition=pgpu
+
+export LC_CTYPE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+Data_PATH=/data/users/zwang/new_assembly/participant_7/pacbio
+out=/data/users/zwang/new_assembly/03_canu
+cd $Data_PATH
+
+
+
+/data/users/zwang/new_assembly/software/canu-2.2/bin/canu \
+ -p Arabidopsis -d $out \
+ genomeSize=126m \
+ gridOptions="--partition=pgpu" \
+ -pacbio *.fastq.gz maxThreads=16 maxMemory=64 gridEngineResourceOption="--cpus-per-task=THREADS --mem-per-cpu=MEMORY"
