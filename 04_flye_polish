@@ -1,40 +1,42 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=2-00:00:00
-#SBATCH --mem=100
-#SBATCH --cpus-per-task=8
-#SBATCH --job-name=04_polish_flye
-#SBATCH --mail-user=zhihui.wang@students.unibe.ch
-#SBATCH --mail-type=begin,end
-#SBATCH --output=/data/users/zwang/new_assembly/output/output_04_polish_flye_%j.o
-#SBATCH --error=/data/users/zwang/new_assembly/output/error_04_polish_flye_%j.e
-#SBATCH --partition=pgpu
+#SBATCH --time=2-00:00:00             # Set a time limit of 2 days
+#SBATCH --mem=100G                    # Allocate 100 GB of memory
+#SBATCH --cpus-per-task=8             # Request 8 CPUs per task
+#SBATCH --job-name=04_polish_flye     # Name the job '04_polish_flye'
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch # Email for notifications
+#SBATCH --mail-type=begin,end         # Email notifications on job start and end
+#SBATCH --output=/data/users/zwang/new_assembly/output/output_04_polish_flye_%j.o # Standard output file
+#SBATCH --error=/data/users/zwang/new_assembly/output/error_04_polish_flye_%j.e   # Standard error file
+#SBATCH --partition=pgpu              # Specify the partition to submit to
 
-
-module load Bowtie2/2.4.4-GCC-10.3.0
-module load SAMtools/1.13-GCC-10.3.0
-module load Pilon/1.23-Java-11
-module load FastQC/0.11.9-Java-11q
+module load Bowtie2/2.4.4-GCC-10.3.0   # Load Bowtie2 module
+module load SAMtools/1.13-GCC-10.3.0   # Load SAMtools module
+module load Pilon/1.23-Java-11         # Load Pilon module
+module load FastQC/0.11.9-Java-11      # Load FastQC module
 
 draft_genome=/data/users/zwang/new_assembly/03_flye
 data=/data/users/zwang/new_assembly/participant_7/Illumina
 outfile=/data/users/zwang/new_assembly/04_flye_polish
-cd $draft_genome
-# comparation
-bowtie2-build -f  assembly.fasta --threads 8 z | bowtie2 \
- -x \
-   --sensitive-local \
-   -p 8 \
-   -1 $data*1.fq.gz \
-   -2 $data*2.fq.gz | samtools sort \  
-   -T $SCRATCH \
-  -@ $SLURM_CPUS_PER_TASK \
-    -O bam \
-aln.sam \    -o last.sorted.bam
-samtools index -b -@ 8 last.sorted.bam
 
+# Create output directory if it doesn't exist
+mkdir -p $outfile
+
+# Change to the draft genome directory
+cd $draft_genome
+
+# Build Bowtie2 index
+bowtie2-build -f assembly.fasta assembly_index
+
+# Run Bowtie2 alignment
+bowtie2 --sensitive-local -x assembly_index -1 ${data}/*1.fastq.gz -2 ${data}/*2.fastq.gz -p 8 | samtools sort -@ 8 -o last.sorted.bam -
+
+# Index the BAM file
+samtools index -@ 8 last.sorted.bam
+
+# Run Pilon
 java -Xmx45g -jar $EBROOTPILON/pilon-1.23.jar \
-    --genome $draft_genome/*fasta\
+    --genome $draft_genome/assembly.fasta \
     --bam last.sorted.bam \
     --outdir $outfile \
     --threads 8
