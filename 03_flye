@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+#SBATCH --cpus-per-task=16
+#SBATCH --mem-per-cpu=4GB
+#SBATCH --time=1-00:00:00
+#SBATCH --job-name=Flye
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch
+#SBATCH --mail-type=begin,end
+#SBATCH --output=/data/users/zwang/new_assembly/output/flye_output_%j.o
+#SBATCH --error=/data/users/zwang/new_assembly/output/flye_error_%j.e
+#SBATCH --partition=pgpu
+
+
+module load Flye/2.9-GCC-10.3.0
+
+Data_PATH=/data/users/zwang/new_assembly/participant_7/pacbio
+out_pacbio=/data/users/zwang/new_assembly/03_flye
+cd $Data_PATH
+flye --pacbio-raw *.fastq.gz --out-dir $out_pacbio --threads 16
