@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+#SBATCH --time=1-00:00:00
+#SBATCH --mem=48G
+#SBATCH --cpus-per-task=12
+#SBATCH --job-name=RNAseq
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch
+#SBATCH --mail-type=begin,end
+#SBATCH --output=/data/users/zwang/new_assembly/output/output_trinity_%j.o
+#SBATCH --error=/data/users/zwang/new_assembly/output/error_trinity_%j.e
+#SBATCH --partition=pgpu
+
+
+module load Trinity/2.15.1-foss-2021a
+
+Data_PATH=/data/users/zwang/new_assembly/participant_7/RNAseq
+out=/data/users/zwang/new_assembly/03_trinity
+
+cd $Data_PATH
+Trinity --seqType fq --left *_1.fastq.gz --right *_2.fastq.gz --CPU 12 --max_memory 47G --output $out
