@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+#SBATCH --time=2-00:00:00
+#SBATCH --mem=100G
+#SBATCH --cpus-per-task=8
+#SBATCH --job-name=05_quast_with
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch
+#SBATCH --mail-type=begin,end
+#SBATCH --output=/data/users/zwang/new_assembly/output/output_05_quast_%j.o
+#SBATCH --error=/data/users/zwang/new_assembly/output/error_05_quast_%j.e
+#SBATCH --partition=pgpu
+
+# Define paths to directories
+WORKDIR=/data/users/zwang/new_assembly
+DATADIR=/data/courses/assembly-annotation-course/references
+Genome_reference=/data/courses/assembly-annotation-course/references
+cd $WORKDIR
+# Run QUAST with reference
+apptainer exec \
+--bind $WORKDIR \
+/data/courses/assembly-annotation-course/containers/quast_5.1.0rc1.sif \
+quast.py $WORKDIR/03_flye/assembly.fasta \
+ $WORKDIR/04_flye_polish/pilon.fasta\
+ $WORKDIR/03_canu/Arabidopsis.contigs.fasta \
+ $WORKDIR/04_canu_polish/pilon.fasta -r $DATADIR/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa -g $DATADIR/TAIR10_GFF3_genes.gff \
+ --large \
+ --threads 4 \
+ --labels "flye initial","flye polished","canu initial","canu polished" \
+ -o $WORKDIR/05_quast_with
