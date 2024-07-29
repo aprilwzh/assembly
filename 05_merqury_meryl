@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+#SBATCH --time=2-00:00:00
+#SBATCH --mem=100G
+#SBATCH --cpus-per-task=8
+#SBATCH --job-name=05_merqury
+#SBATCH --mail-user=zhihui.wang@students.unibe.ch
+#SBATCH --mail-type=begin,end
+#SBATCH --output=/data/users/zwang/new_assembly/output/output_05_merqury_%j.o
+#SBATCH --error=/data/users/zwang/new_assembly/output/error_05_merqury_%j.e
+#SBATCH --partition=pgpu
+
+# Define paths to directories
+WORKDIR=/data/users/zwang/new_assembly
+SOFTWARE=/data/users/zwang/new_assembly/software/merqury-1.3
+
+# Get the best kmer size
+KMER=$($SOFTWARE/best_k.sh 135000000 | sed -n '3 p') # Get the third line of output
+
+# Build kmers with meryl
+mkdir -p $WORKDIR/meryl
+/data/users/zwang/new_assembly/software/meryl-1.4.1/bin/meryl count k=$KMER ${WORKDIR}/participant_7/Illumina/*1* output $WORKDIR/meryl/1_kmers.meryl
+/data/users/zwang/new_assembly/software/meryl-1.4.1/bin/meryl count k=$KMER ${WORKDIR}/participant_7/Illumina/*2* output $WORKDIR/meryl/2_kmers.meryl
+
+/data/users/zwang/new_assembly/software/meryl-1.4.1/bin/meryl union-sum output $WORKDIR/meryl/merged_kmers.meryl $WORKDIR/meryl/1_kmers.meryl $WORKDIR/meryl/2_kmers.meryl
+
+# Create directories for Merqury output
+cd $WORKDIR
+mkdir -p merqury/flye merqury/canu
+
+# Run Merqury for Flye assemblies
+cd merqury/flye
+$SOFTWARE/merqury.sh $WORKDIR/meryl/merged_kmers.meryl $WORKDIR/03_flye/assembly.fasta flye_initial
+$SOFTWARE/merqury.sh $WORKDIR/meryl/merged_kmers.meryl $WORKDIR/04_flye_polish/pilon.fasta flye_polished
+
+# Run Merqury for Canu assemblies
+cd ../canu
+$SOFTWARE/merqury.sh $WORKDIR/meryl/merged_kmers.meryl $WORKDIR/03_canu/Arabidopsis.contigs.fasta canu_initial
+$SOFTWARE/merqury.sh $WORKDIR/meryl/merged_kmers.meryl $WORKDIR/04_canu_polish/pilon.fasta canu_polished
